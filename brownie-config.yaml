@@ -1,0 +1,8 @@
+reports:
+  exclude_contracts:
+    - Context
+    - IERC20Metadata
+    - ERC20
+    - IERC20
+    - IERC20Metadata
+
