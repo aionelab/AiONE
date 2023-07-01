@@ -13,3 +13,8 @@ def isolate(fn_isolation):
 @pytest.fixture(scope="module")
 def token(Token, accounts):
     return Token.deploy({'from': accounts[0]})
+
+
+@pytest.fixture(scope="module")
+def staking(token, Staking, accounts):
+    return Staking.deploy(token.address, {'from': accounts[0]})
