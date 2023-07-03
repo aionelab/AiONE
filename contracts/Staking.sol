@@ -46,7 +46,7 @@ contract Staking {
         if (currentRewardBalance > lastRewardBalance) {
             uint256 newBalance = currentRewardBalance.sub(lastRewardBalance);
             rewardHistoryList.push(AmountHistory(newBalance, block.timestamp, block.timestamp.add(REWARD_STEP_COUNT)));
-            updateRewardPerToken();
+            updateRewardPerToken(block.timestamp.add(REWARD_STEP_COUNT));
         } else {
             revert("FailedToDetectNewRewardDeposit");
         }
@@ -71,7 +71,10 @@ contract Staking {
 
         userStakingHistory[msg.sender].push(AmountHistory(newBalance, block.timestamp, 0));
         
-        updateRewardPerToken();
+        if(rewardHistoryList.length > 0){
+            uint256 lastRewardEndTime = rewardHistoryList[rewardHistoryList.length - 1].toTimestamp;
+            updateRewardPerToken(lastRewardEndTime);
+        }
 
         bool result = ourToken.transferFrom(msg.sender, address(this), amount);
         require(result, "FailedToTransferToken");
@@ -101,7 +104,10 @@ contract Staking {
 
         userStakingHistory[msg.sender].push(AmountHistory(lastUserStakedBalance.sub(amount), block.timestamp, 0));
 
-        updateRewardPerToken();
+        if(rewardHistoryList.length > 0){
+            uint256 lastRewardEndTime = rewardHistoryList[rewardHistoryList.length - 1].toTimestamp;
+            updateRewardPerToken(lastRewardEndTime);
+        }
 
 
         bool result = ourToken.transfer(msg.sender, amount);
@@ -162,7 +168,7 @@ contract Staking {
             for (uint256 j = 0; j < rewardPerTokenHistoryList.length; j++) {
                 AmountHistory storage rewardHistory = rewardPerTokenHistoryList[j];
                 uint256 rewardStartTime = rewardHistory.fromTimestamp;
-                uint256 rewardEndTime = rewardHistory.toTimestamp > 0 ? rewardHistory.toTimestamp : block.timestamp;
+                uint256 rewardEndTime =  min(rewardHistory.toTimestamp, block.timestamp);
                 
                 if (rewardHistory.amount > 0 && (rewardStartTime < userEndTime || rewardEndTime > userStartTime)) {
                     uint256 endDuration = min(rewardEndTime, userEndTime);
@@ -200,10 +206,10 @@ contract Staking {
     }
 
 
-    function updateRewardPerToken() private {
+    function updateRewardPerToken(uint256 endTime) private {
         if(rewardPerTokenHistoryList.length > 0)
             rewardPerTokenHistoryList[rewardPerTokenHistoryList.length - 1].toTimestamp = block.timestamp;
 
-        rewardPerTokenHistoryList.push(AmountHistory(calculateRewardPerToken(), block.timestamp, 0));
+        rewardPerTokenHistoryList.push(AmountHistory(calculateRewardPerToken(), block.timestamp, endTime));
     }
 }
