@@ -68,8 +68,13 @@ def test_claim_reward_change_rate(staking, token, accounts):
     tx.wait(1)
 
     assert staking.calculateRewardPerToken() == Web3.toWei( 0.001 ,'ether')
-
+    
+    assert staking.rewardBalance({'from': accounts[0]}) ==  Web3.toWei( 50000 ,'ether')
+    
     brownie.chain.sleep(50000)
+    brownie.chain.mine()
+
+    assert staking.rewardBalance({'from': accounts[0]}) ==  Web3.toWei( 55000 ,'ether')
 
     tx = staking.claimReward({'from': accounts[0]})
     tx.wait(1)
@@ -78,7 +83,7 @@ def test_claim_reward_change_rate(staking, token, accounts):
     assert token.balanceOf(accounts[0]) == new_assert_balance
     
 
-def test_claim_ward_change_stake(staking, token, accounts):
+def test_claim_reward_change_stake(staking, token, accounts):
     tx = token.transfer(staking.address, Web3.toWei( 2592000 ,'ether'), {'from': accounts[0]})
     tx.wait(1)
 
@@ -109,3 +114,35 @@ def test_claim_ward_change_stake(staking, token, accounts):
 
     new_assert_balance = balance + Web3.toWei( 100000 ,'ether') + Web3.toWei( 90 ,'ether')
     assert token.balanceOf(accounts[0]) == new_assert_balance
+
+
+def test_reward_calculation(staking, token, accounts):
+    tx = token.transfer(staking.address, Web3.toWei( 2592000 ,'ether'), {'from': accounts[0]})
+    tx.wait(1)
+
+    tx = token.approve(staking.address, Web3.toWei( 100 ,'ether'), {'from': accounts[0]})
+    tx.wait(1)
+
+    tx = staking.stake(Web3.toWei( 100 ,'ether'), {'from': accounts[0]})
+    tx.wait(1)
+
+    tx = staking.updateRewardPool({'from': accounts[0]})
+    tx.wait(1)
+
+    assert staking.calculateRewardPerToken() == Web3.toWei( 0.01 ,'ether')
+
+    brownie.chain.sleep(50000)
+    brownie.chain.mine()
+
+    assert staking.rewardBalance({'from': accounts[0]}) == Web3.toWei( 50000 ,'ether')
+
+    brownie.chain.sleep(2592000)
+    brownie.chain.mine()
+
+    assert staking.rewardBalance({'from': accounts[0]}) == Web3.toWei( 2592000 ,'ether')
+
+    brownie.chain.sleep(10000)
+    brownie.chain.mine()
+
+    assert staking.rewardBalance({'from': accounts[0]}) == Web3.toWei( 2592000 ,'ether')
+
