@@ -14,6 +14,7 @@ contract Staking {
     event Staked(address indexed user, uint256 amount);
     event Unstaked(address indexed user, uint256 amount);
     event RewardClaimed(address indexed user, uint256 amount);
+    event NewReward(uint256 amount);
 
     struct AmountHistory {
         uint256 amount;
@@ -34,7 +35,6 @@ contract Staking {
         ourToken = IERC20(_ourToken);
     }
 
-
     function updateRewardPool() external {
         uint256 currentRewardBalance = ourToken.balanceOf(address(this)).sub(totalStakedBalance).add(totalClaimedReward);
         uint256 lastRewardBalance = 0;
@@ -47,6 +47,8 @@ contract Staking {
             uint256 newBalance = currentRewardBalance.sub(lastRewardBalance);
             rewardHistoryList.push(AmountHistory(newBalance, block.timestamp, block.timestamp.add(REWARD_STEP_COUNT)));
             updateRewardPerToken(block.timestamp.add(REWARD_STEP_COUNT));
+            emit NewReward(newBalance);
+
         } else {
             revert("FailedToDetectNewRewardDeposit");
         }
@@ -204,7 +206,6 @@ contract Staking {
     function min(uint256 a, uint256 b) private pure returns (uint256) {
         return a <= b ? a : b;
     }
-
 
     function updateRewardPerToken(uint256 endTime) private {
         if(rewardPerTokenHistoryList.length > 0)
